@@ -136,7 +136,6 @@
       </div>
       <div class="tool-group">
         <span class="tool-label">Build</span>
-        <button class="tb-btn" onclick="rotateSelected()">↻ Rotate</button>
         <button class="tb-btn" id="btn-labels" onclick="toggleLabels()">Labels</button>
         <button class="tb-btn" id="btn-radius" onclick="toggleRadius()">Radius</button>
         <button class="tb-btn" id="btn-grid" onclick="toggleGrid()">Grid</button>
@@ -919,7 +918,7 @@ function updateModeIndicator(){
     return;
   }
   document.getElementById('stat-action').textContent='';
-  if(!selectedBuilding){document.getElementById('mode-indicator').textContent='SELECT A BUILDING';return;}
+  if(!selectedBuilding){document.getElementById('mode-indicator').textContent='';return;}
   const bw=ghostRotated?ghostH:ghostW, bh=ghostRotated?ghostW:ghostH;
   const dirLabels=['→','↓','↘','↙'];
   const dirSuffix=selectedBuilding.isLinear?' ['+dirLabels[ghostDirection]+']':(ghostRotated?' [rot]':'');
