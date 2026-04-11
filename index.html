@@ -1848,6 +1848,7 @@ wrap.addEventListener('mousemove',e=>{
     if(edge==='diag_end'||edge==='diag_end_nwse'||edge==='diag_end_nesw'){
       const dd=p.dir===2?Math.max(dw,dh):Math.max(-dw,dh);
       p.w=Math.max(minW,Math.min(maxW,dragResize.origW+dd));p.h=1;
+      if(p.w<=minW){p.dir=0;p.x=dragResize.origX;p.y=dragResize.origY;}
       drawAll();return;}
     if(edge==='diag_start'||edge==='diag_start_nwse'||edge==='diag_start_nesw'){
       const dd=p.dir===2?Math.min(dw,dh):Math.min(-dw,dh);
@@ -1855,7 +1856,9 @@ wrap.addEventListener('mousemove',e=>{
       const delta=dragResize.origW-nlen;
       if(p.dir===2){p.x=dragResize.origX+delta;p.y=dragResize.origY+delta;}
       else{p.x=dragResize.origX-delta;p.y=dragResize.origY+delta;}
-      p.w=nlen;p.h=1;drawAll();return;}
+      p.w=nlen;p.h=1;
+      if(p.w<=minW){p.dir=0;p.x=dragResize.origX;p.y=dragResize.origY;}
+      drawAll();return;}
 
     // Linear corner drag → auto-detect diagonal direction (need at least 2 tiles of drag)
     if(isLin&&(edge==='se'||edge==='sw'||edge==='ne'||edge==='nw')){
@@ -1876,6 +1879,7 @@ wrap.addEventListener('mousemove',e=>{
         else if(edge==='nw'&&dw<0&&dh<0){p.dir=2;p.x=dragResize.origX+dw;p.y=dragResize.origY+dh;}
         else{p.dir=2;p.x=dragResize.origX;p.y=dragResize.origY;}
         p.w=Math.max(minW,Math.min(maxW,diagLen));p.h=1;
+        if(p.w<=minW){p.dir=0;p.x=dragResize.origX;p.y=dragResize.origY;}
         drawAll();return;
       }
     }
