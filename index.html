@@ -2076,7 +2076,14 @@ wrap.addEventListener('mousedown',e=>{
         document.querySelectorAll('.bldg-btn.active').forEach(el=>el.classList.remove('active'));
         ghostW=hit.placed.w; ghostH=hit.placed.h;
         ghostDirection=hit.placed.dir||0;
-        ghostX=gx-Math.floor(hit.placed.w/2); ghostY=gy-Math.floor(hit.placed.h/2);
+        const _pd=ALL_BUILDINGS.find(b=>b.id===hit.placed.buildingId);
+        if(_pd&&_pd.isLinear&&ghostDirection>=2){
+          const _len=Math.max(hit.placed.w,hit.placed.h);
+          const _mid=getLinearTiles(0,0,_len,ghostDirection)[Math.floor(_len/2)];
+          ghostX=gx-_mid.x; ghostY=gy-_mid.y;
+        } else {
+          ghostX=gx-Math.floor(hit.placed.w/2); ghostY=gy-Math.floor(hit.placed.h/2);
+        }
         showResizePanel(def||null);
         updateModeIndicator(); drawAll(); return;
       }
