@@ -579,6 +579,7 @@ let placed=[], nextId=1;
 let terrain={};
 let paintMode=null;
 let isPainting=false;
+let linearDrag=null; // {anchorX, anchorY, buildingId}
 let selectedBuilding=null;       // building def selected from sidebar
 let ghostX=-1, ghostY=-1, ghostRotated=false;
 let ghostDirection=0; // 0=horizontal(→), 1=vertical(↓), 2=diagonal(↘), 3=diagonal(↙)
@@ -1032,6 +1033,7 @@ document.getElementById('search-input').oninput=e=>buildSidebar(e.target.value);
 //  SELECTION
 // ══════════════════════════════════════════════════════
 function selectBuilding(b){
+  if(linearDrag){linearDrag=null;}
   if(paintMode){paintMode=null;document.getElementById('btn-water').classList.remove('active');document.getElementById('btn-forest').classList.remove('active');}
   // Cancel any active pick-up when choosing from sidebar
   if(pickedUp){ cancelPickUp(); }
@@ -1160,6 +1162,30 @@ function screenToGrid(sx,sy){return{gx:Math.floor((sx-panX)/(CELL*zoom)),gy:Math
 function gridToScreen(gx,gy){return{sx:gx*CELL*zoom+panX,sy:gy*CELL*zoom+panY};}
 
 // Get tiles occupied by a linear building
+function computeLinearFromTo(ax,ay,tx,ty){
+  const dx=tx-ax,dy=ty-ay,adx=Math.abs(dx),ady=Math.abs(dy);
+  if(adx===0&&ady===0) return {dir:0,len:1,ox:ax,oy:ay,w:1,h:1};
+  let dir,len,ox=ax,oy=ay,w,h;
+  if(ady<=adx*0.414){
+    // Horizontal
+    len=adx+1;dir=0;w=len;h=1;
+    if(dx<0) ox=ax-len+1;
+  } else if(adx<=ady*0.414){
+    // Vertical
+    len=ady+1;dir=1;w=1;h=len;
+    if(dy<0) oy=ay-len+1;
+  } else {
+    // Diagonal
+    len=Math.max(adx,ady)+1;
+    if(dx>0&&dy>0){dir=2;} // SE
+    else if(dx<0&&dy>0){dir=3;} // SW
+    else if(dx>0&&dy<0){dir=3;ox=ax+len-1;oy=ay-len+1;} // NE = flip SW
+    else{dir=2;ox=ax-len+1;oy=ay-len+1;} // NW = flip SE
+    w=len;h=1;
+  }
+  return {dir,len,ox,oy,w,h};
+}
+
 function getLinearTiles(x,y,len,dir){
   const tiles=[];
   for(let i=0;i<len;i++){
@@ -1323,6 +1349,23 @@ function drawAll(){
       p.w=bw; p.h=bh;
       const ok=canPlaceAt(ghostX,ghostY,bw,bh,null,p.buildingId,dir);
       if(fakeDef) drawGhost(fakeDef, ghostX, ghostY, bw, bh, ok);
+    } else if(linearDrag){
+      const cs=CELL*zoom;
+      const info=computeLinearFromTo(linearDrag.anchorX,linearDrag.anchorY,ghostX,ghostY);
+      const fakeDef=ALL_BUILDINGS.find(b=>b.id===linearDrag.buildingId);
+      if(fakeDef){
+        // Anchor tile marker
+        const {sx:asx,sy:asy}=gridToScreen(linearDrag.anchorX,linearDrag.anchorY);
+        ctx.fillStyle='rgba(255,200,80,.4)';ctx.fillRect(asx,asy,cs,cs);
+        ctx.strokeStyle='rgba(255,200,80,.9)';ctx.lineWidth=2;ctx.strokeRect(asx,asy,cs,cs);
+        // Road preview
+        const ok=canPlaceAt(info.ox,info.oy,info.w,info.h,null,linearDrag.buildingId,info.dir);
+        if(info.dir>=2){
+          drawGhostTiles(getLinearTiles(info.ox,info.oy,info.len,info.dir),cs,fakeDef,ok);
+        } else {
+          drawGhost(fakeDef,info.ox,info.oy,info.w,info.h,ok);
+        }
+      }
     } else if(selectedBuilding){
       const isLin=selectedBuilding.isLinear;
       const dir=isLin?ghostDirection:0;
@@ -1934,16 +1977,12 @@ wrap.addEventListener('mousemove',e=>{
       } else {
         ghostX=gx-Math.floor(p.w/2); ghostY=gy-Math.floor(p.h/2);
       }
+    } else if(linearDrag){
+      ghostX=gx;ghostY=gy;
     } else if(selectedBuilding){
-      if(selectedBuilding.isLinear&&ghostDirection>=2){
-        const len=Math.max(ghostW,ghostH);
-        const midIdx=Math.floor(len/2);
-        const midTiles=getLinearTiles(0,0,len,ghostDirection);
-        ghostX=gx-midTiles[midIdx].x; ghostY=gy-midTiles[midIdx].y;
-      } else {
-        const bw=ghostRotated?ghostH:ghostW, bh=ghostRotated?ghostW:ghostH;
-        ghostX=gx-Math.floor(bw/2); ghostY=gy-Math.floor(bh/2);
-      }
+      if(selectedBuilding.isLinear){ghostX=gx;ghostY=gy;}
+      else{const bw=ghostRotated?ghostH:ghostW,bh=ghostRotated?ghostW:ghostH;
+        ghostX=gx-Math.floor(bw/2);ghostY=gy-Math.floor(bh/2);}
     }
     drawAll();
   }
@@ -1983,6 +2022,7 @@ wrap.addEventListener('mousedown',e=>{
     if(e.button===2){isPainting=true;eraseTerrain(gx,gy);drawAll();e.preventDefault();return;}}
   if(e.button===2){
     // If something is selected or picked up — deselect/cancel
+    if(linearDrag){linearDrag=null;document.getElementById('mode-indicator').textContent='';drawAll();e.preventDefault();return;}
     if(pickedUp || selectedBuilding){
       if(pickedUp){ cancelPickUp(); }
       selectedBuilding=null;
@@ -2033,27 +2073,24 @@ wrap.addEventListener('mousedown',e=>{
     }
 
     if(selectedBuilding){
-      const isLin=selectedBuilding.isLinear;
-      const dir=isLin?ghostDirection:0;
-      let bw,bh;
-      if(isLin&&dir>=2){bw=Math.max(ghostW,ghostH);bh=1;}
-      else if(isLin&&dir===1){bw=1;bh=Math.max(ghostW,ghostH);}
-      else if(isLin){bw=Math.max(ghostW,ghostH);bh=1;}
-      else{bw=ghostRotated?ghostH:ghostW;bh=ghostRotated?ghostW:ghostH;}
-      let ox,oy;
-      if(isLin&&dir>=2){
-        const len=Math.max(bw,bh);
-        const midIdx=Math.floor(len/2);
-        const midTiles=getLinearTiles(0,0,len,dir);
-        ox=gx-midTiles[midIdx].x; oy=gy-midTiles[midIdx].y;
-      } else {
-        ox=gx-Math.floor(bw/2); oy=gy-Math.floor(bh/2);
+      if(selectedBuilding.isLinear){
+        if(!linearDrag){
+          linearDrag={anchorX:gx,anchorY:gy,buildingId:selectedBuilding.id};
+          document.getElementById('mode-indicator').textContent='\u25b8 '+selectedBuilding.name+' \u2014 move to extend, click to place';
+          drawAll();return;
+        } else {
+          const info=computeLinearFromTo(linearDrag.anchorX,linearDrag.anchorY,gx,gy);
+          if(canPlaceAt(info.ox,info.oy,info.w,info.h,null,linearDrag.buildingId,info.dir)){
+            placed.push({id:nextId++,buildingId:linearDrag.buildingId,x:info.ox,y:info.oy,w:info.w,h:info.h,dir:info.dir});
+          }
+          linearDrag=null;drawAll();return;
+        }
       }
-      if(canPlaceAt(ox,oy,bw,bh,null,selectedBuilding.id,dir)){
-        const obj={id:nextId++,buildingId:selectedBuilding.id,x:ox,y:oy,w:bw,h:bh};
-        if(isLin) obj.dir=dir;
-        placed.push(obj);
-        drawAll(); return;
+      const bw=ghostRotated?ghostH:ghostW,bh=ghostRotated?ghostW:ghostH;
+      const ox=gx-Math.floor(bw/2),oy=gy-Math.floor(bh/2);
+      if(canPlaceAt(ox,oy,bw,bh,null,selectedBuilding.id)){
+        placed.push({id:nextId++,buildingId:selectedBuilding.id,x:ox,y:oy,w:bw,h:bh});
+        drawAll();return;
       }
     }
 
@@ -2148,6 +2185,7 @@ function eraseAt(gx,gy){
 document.addEventListener('keydown',e=>{
   if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
   if(e.key==='Tab'){e.preventDefault();rotateSelected();}
+  if(e.key==='Escape'&&linearDrag){linearDrag=null;document.getElementById('mode-indicator').textContent='';drawAll();return;}
   if(e.key==='Escape'){
     if(pickedUp){cancelPickUp();}
     else{selectedBuilding=null;document.querySelectorAll('.bldg-btn.active').forEach(el=>el.classList.remove('active'));showResizePanel(null);updateModeIndicator();}
