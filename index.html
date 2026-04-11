@@ -594,6 +594,7 @@ let dragResize=null; // {placedObj, edge:'e'|'s'|'se', startGx,startGy, origX,or
 let mode='place';
 let showLabels=true, showRadius=false, showGrid=true;
 let zoom=1.0, panX=0, panY=0; // will be centered on init
+let showBg=true;
 let isPanning=false, panStartX, panStartY, panStartOffX, panStartOffY;
 let currentRoadType='dirt';
 
@@ -1254,7 +1255,9 @@ function drawAll(){
   ctx.save();
   ctx.setTransform(1,0,0,1,0,0);
   ctx.globalAlpha=1.0;
-  if(grassImg.complete&&grassImg.naturalWidth>0){
+  if(!showBg){
+    ctx.fillStyle='#ffffff';ctx.fillRect(0,0,W,H);
+  } else if(grassImg.complete&&grassImg.naturalWidth>0){
     ctx.drawImage(grassImg,0,0,W,H);
   } else {
     ctx.fillStyle = '#d4b896';
