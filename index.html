@@ -1837,7 +1837,8 @@ wrap.addEventListener('mousemove',e=>{
     const edge=dragResize.edge;
     const isLin=def&&def.isLinear;
     const isBrg=def&&def.isBridge;
-    // Diagonal resize
+
+    // Diagonal resize (already diagonal)
     if(edge==='diag_end'){
       const dd=p.dir===2?Math.max(dw,dh):Math.max(-dw,dh);
       p.w=Math.max(minW,Math.min(maxW,dragResize.origW+dd));p.h=1;
@@ -1849,6 +1850,40 @@ wrap.addEventListener('mousemove',e=>{
       if(p.dir===2){p.x=dragResize.origX+delta;p.y=dragResize.origY+delta;}
       else{p.x=dragResize.origX-delta;p.y=dragResize.origY+delta;}
       p.w=nlen;p.h=1;drawAll();return;}
+
+    // Linear corner drag → auto-detect diagonal direction
+    if(isLin&&(edge==='se'||edge==='sw'||edge==='ne'||edge==='nw')&&(Math.abs(dw)>0&&Math.abs(dh)>0)){
+      const adw=Math.abs(dw),adh=Math.abs(dh);
+      // If dragging roughly diagonally (within 2:1 ratio), switch to diagonal mode
+      if(adw>0&&adh>0&&adw/adh<2&&adh/adw<2){
+        // Determine diagonal direction from corner + drag direction
+        let dir;
+        if((edge==='se'&&dw>0&&dh>0)||(edge==='nw'&&dw<0&&dh<0)) dir=2; // ↘
+        else if((edge==='sw'&&dw<0&&dh>0)||(edge==='ne'&&dw>0&&dh<0)) dir=3; // ↙
+        else if(edge==='se'&&dw<0&&dh>0) dir=3;
+        else if(edge==='ne'&&dw>0&&dh>0) dir=2;
+        else dir=2; // default
+        p.dir=dir;
+        const diagLen=Math.max(adw,adh)+1;
+        p.w=Math.max(minW,Math.min(maxW,diagLen));p.h=1;
+        // Adjust origin for NW/NE/SW starts
+        if(edge==='nw'){
+          if(dir===2){p.x=dragResize.origX+dw;p.y=dragResize.origY+dh;}
+          else{p.x=dragResize.origX;p.y=dragResize.origY+dh;}
+        } else if(edge==='ne'){
+          if(dir===3){p.x=dragResize.origX+dw;p.y=dragResize.origY;}
+          else{p.x=dragResize.origX;p.y=dragResize.origY;}
+        } else if(edge==='sw'){
+          if(dir===2){p.x=dragResize.origX;p.y=dragResize.origY;}
+          else{p.x=dragResize.origX+dw;p.y=dragResize.origY;}
+        } else { // se
+          p.x=dragResize.origX;p.y=dragResize.origY;
+        }
+        drawAll();return;
+      }
+    }
+
+    // Standard axis resize
     // East
     if(edge==='e'||edge==='se'||edge==='ne'){
       if(!isLin||dragResize.origH<=minH) p.w=Math.max(minW,Math.min(maxW,dragResize.origW+dw));
@@ -1871,6 +1906,10 @@ wrap.addEventListener('mousemove',e=>{
     if(isLin&&p.w>minW&&p.h>minH){
       if(Math.abs(dw)>=Math.abs(dh)){p.h=minH;p.y=dragResize.origY;}
       else{p.w=minW;p.x=dragResize.origX;}
+    }
+    // Reset dir for non-diagonal
+    if(isLin&&p.dir>=2&&(p.w>minW||p.h>minH)){
+      if(p.w>p.h){p.dir=0;}else{p.dir=1;}
     }
     // Sync sliders
     drawAll(); return;
