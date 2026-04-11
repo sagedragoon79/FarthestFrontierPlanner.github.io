@@ -2090,22 +2090,6 @@ wrap.addEventListener('mousedown',e=>{
     if(hit){
       const def=ALL_BUILDINGS.find(b=>b.id===hit.placed.buildingId);
 
-      if(hit.edge && def && def.resizable){
-        // Start drag resize
-        const idx=placed.indexOf(hit.placed);
-        placed.splice(idx,1); // remove temporarily to avoid self-collision
-        dragResize={
-          placedObj:hit.placed, edge:hit.edge,
-          startGx:gx, startGy:gy,
-          origW:hit.placed.w, origH:hit.placed.h,
-          origX:hit.placed.x, origY:hit.placed.y,
-        };
-        if(def.resizable){
-          showResizePanel(def);
-        }
-        e.preventDefault(); drawAll(); return;
-      }
-
       if(hit.edge&&hit.edge.startsWith('linear_end')){
         // Click on end tile: re-enter extend mode from opposite end
         const p=hit.placed;
@@ -2137,6 +2121,19 @@ wrap.addEventListener('mousedown',e=>{
         document.getElementById('mode-indicator').textContent='\u25b8 '+def2.name+' \u2014 move to extend, click to place';
         ghostX=gx;ghostY=gy;
         drawAll();return;
+      }
+
+      if(hit.edge && !hit.edge.startsWith('linear_end') && def && def.resizable){
+        // Start drag resize (non-linear resizable buildings like crop field, graveyard)
+        const idx=placed.indexOf(hit.placed);
+        placed.splice(idx,1);
+        dragResize={
+          placedObj:hit.placed, edge:hit.edge,
+          startGx:gx, startGy:gy,
+          origW:hit.placed.w, origH:hit.placed.h,
+          origX:hit.placed.x, origY:hit.placed.y,
+        };
+        e.preventDefault(); drawAll(); return;
       }
 
       if(!hit.edge){
