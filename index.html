@@ -2102,6 +2102,39 @@ wrap.addEventListener('mousedown',e=>{
         e.preventDefault(); drawAll(); return;
       }
 
+      if(hit.edge==='linear_end'){
+        // Click on end tile: re-enter extend mode from opposite end
+        const p=hit.placed;
+        const def2=ALL_BUILDINGS.find(b=>b.id===p.buildingId);
+        const dir=p.dir||0;
+        // Find which end was clicked and use the opposite as anchor
+        let anchorX,anchorY;
+        if(dir>=2){
+          const tiles=getLinearTiles(p.x,p.y,Math.max(p.w,p.h),dir);
+          const ft=tiles[0],lt=tiles[tiles.length-1];
+          const dFirst=Math.abs(gx-ft.x)+Math.abs(gy-ft.y);
+          const dLast=Math.abs(gx-lt.x)+Math.abs(gy-lt.y);
+          if(dFirst<=dLast){anchorX=lt.x;anchorY=lt.y;}
+          else{anchorX=ft.x;anchorY=ft.y;}
+        } else if(p.w>=p.h){
+          // Horizontal: check if cursor is near left or right end
+          if(gx-p.x < p.x+p.w-1-gx){anchorX=p.x+p.w-1;anchorY=p.y;}
+          else{anchorX=p.x;anchorY=p.y;}
+        } else {
+          // Vertical
+          if(gy-p.y < p.y+p.h-1-gy){anchorX=p.x;anchorY=p.y+p.h-1;}
+          else{anchorX=p.x;anchorY=p.y;}
+        }
+        // Remove the old road
+        placed.splice(placed.indexOf(p),1);
+        // Set up linearDrag from opposite end
+        linearDrag={anchorX,anchorY,buildingId:p.buildingId};
+        selectedBuilding=def2;
+        document.getElementById('mode-indicator').textContent='\u25b8 '+def2.name+' \u2014 move to extend, click to place';
+        ghostX=gx;ghostY=gy;
+        drawAll();return;
+      }
+
       if(!hit.edge){
         // Pick up the building
         const idx=placed.indexOf(hit.placed);
