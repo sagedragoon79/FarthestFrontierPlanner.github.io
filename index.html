@@ -1907,9 +1907,10 @@ wrap.addEventListener('mousemove',e=>{
       if(Math.abs(dw)>=Math.abs(dh)){p.h=minH;p.y=dragResize.origY;}
       else{p.w=minW;p.x=dragResize.origX;}
     }
-    // Reset dir for non-diagonal
-    if(isLin&&p.dir>=2&&(p.w>minW||p.h>minH)){
-      if(p.w>p.h){p.dir=0;}else{p.dir=1;}
+    // Reset dir when back to minimum size (unlocks all directions)
+    if(isLin){
+      if(p.w<=minW&&p.h<=minH){p.dir=0;}
+      else if(p.dir>=2&&(p.w>minW||p.h>minH)){if(p.w>p.h){p.dir=0;}else{p.dir=1;}}
     }
     // Sync sliders
     drawAll(); return;
