@@ -4,6 +4,13 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Farthest Frontier City Planner v1.0</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#201812">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="FF Planner">
+<meta name="mobile-web-app-capable" content="yes">
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;0,600&display=swap');
   :root {
@@ -2504,6 +2511,16 @@ buildSidebar();
 document.getElementById('btn-labels').classList.add('active');
 resizeCanvas(); resetView();
 setTimeout(()=>BUILDINGS.forEach(b=>{if(b.icon&&ICON_IMGS[b.icon])getImg(b.icon);}),100);
+</script>
+<script>
+  // PWA service worker registration — enables offline use and "Install app" in Chrome/Edge
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('service-worker.js').catch(err => {
+        console.warn('Service worker registration failed:', err);
+      });
+    });
+  }
 </script>
 </body>
 </html>
