@@ -145,6 +145,7 @@
         <span class="tool-label">Terrain</span>
         <button class="tb-btn" id="btn-water" onclick="togglePaint('water')">💧 Water</button>
         <button class="tb-btn" id="btn-forest" onclick="togglePaint('forest')">🌲 Forest</button>
+        <button class="tb-btn" id="btn-impassable" onclick="togglePaint('impassable')">⛰ Impassable</button>
       </div>
       <div class="tool-group">
         <span class="tool-label">Zoom</span>
@@ -393,9 +394,9 @@ const BUILDINGS = [
   {id:'pub',             cat:'service',  name:'Pub',                w:2,h:3,  icon:'pub',           color:'#8b5e3c', desc:'Provides beer to boost happiness. · Cost: 40 Labor, 50 Planks, 15 Stone', tier:3},
   {id:'apothecary',      cat:'service',  name:'Apothecary Shop',    w:2,h:3,  icon:'apothecary',    color:'#8b5e3c', desc:'Turns medicinal roots, willow, and honey into medicine. · Cost: 60 Labor, 60 Planks, 60 Bricks, 300 Gold', tier:4},
   {id:'theater',         cat:'service',  name:'Theater',            w:5,h:5,  icon:'theater',       color:'#8b5e3c', desc:'Major entertainment, large happiness radius. · Cost: 120 Labor, 150 Planks, 150 Stone, 1250 Gold', tier:3},
-  {id:'temple',          cat:'service',  name:'Temple',             w:6,h:6,  icon:'temple',        color:'#8b5e3c', desc:'Central place of worship. Sacred relics stored here. · Cost: 120 Labor, 300 Planks, 300 Stone, 1200 Gold', singleton:true, tier:2},
+  {id:'temple',          cat:'service',  name:'Temple',             w:5,h:5,  icon:'temple',        color:'#8b5e3c', desc:'Central place of worship. Sacred relics stored here. · Cost: 120 Labor, 300 Planks, 300 Stone, 1200 Gold', singleton:true, tier:2},
   {id:'academy',         cat:'service',  name:'Academy',            w:5,h:5,  icon:'academy',       color:'#8b5e3c', desc:'Develops new technologies for the settlement. · Cost: 100 Labor, 50 Planks, 120 Stone, 500 Gold', singleton:true, tier:2},
-  {id:'library',         cat:'service',  name:'Library',            w:5,h:5,  icon:'library',       color:'#8b5e3c', desc:'Research and knowledge building.', tier:4},
+  {id:'library',         cat:'service',  name:'Library',            w:4,h:3,  icon:'library',       color:'#8b5e3c', desc:'Research and knowledge building.', tier:4},
   {id:'guild_hall',      cat:'service',  name:'Guild Hall',         w:5,h:6,  icon:'guild_hall',    color:'#8b5e3c', desc:'Organizes crafters and workers.', tier:4},
   {id:'crypt',           cat:'service',  name:'Crypt',              w:4,h:4,  icon:'crypt',         color:'#8b5e3c', desc:'Underground burial chamber.', tier:4},
   // Housing
@@ -525,7 +526,7 @@ const BUILDINGS = [
   {id:'small_bench_plaza',   cat:'decoration', name:'Small Bench Plaza',     w:1,h:1, icon:'small_bench_plaza',    desc:'Cobblestone paved plaza with bench. · Cost: 5 Labor, 4 Planks, 15 Stone, 1 Gold', tier:2},
   {id:'corner_bench_plaza',  cat:'decoration', name:'Corner Bench Plaza',    w:1,h:1, icon:'corner_bench_plaza',    desc:'Corner plaza piece with bench. · Cost: 5 Labor, 4 Planks, 15 Stone, 1 Gold', tier:2},
   {id:'wildflowers',         cat:'decoration', name:'Wildflowers',           w:1,h:1, icon:'small_shrub',    desc:'Wild flower decoration. · Cost: 5 Labor, 5 Gold', tier:2},
-  {id:'medium_plaza',        cat:'decoration', name:'Medium Plaza',          w:3,h:3, icon:'medium_plaza',    desc:'Paved plaza. Moderate desirability boost. · Cost: 15 Labor, 10 Stone, 30 Gold', tier:2},
+  {id:'medium_plaza',        cat:'decoration', name:'Medium Plaza',          w:2,h:2, icon:'medium_plaza',    desc:'Paved plaza. Moderate desirability boost. · Cost: 15 Labor, 10 Stone, 30 Gold', tier:2},
   {id:'small_grass_clearing',cat:'decoration', name:'Small Grass Clearing',  w:1,h:1, icon:'dirt_clearing',    desc:'Cleared ground with rustic element. · Cost: 5 Labor, 2 Gold', tier:2},
   {id:'small_park',          cat:'decoration', name:'Small Park',            w:3,h:3, icon:'small_park',    desc:'Small green space. Boosts desirability. · Cost: 30 Labor, 15 Stone, 150 Gold', tier:2},
   {id:'large_park',          cat:'decoration', name:'Large Park',            w:5,h:5, icon:'large_park',    desc:'Large green space. Significant desirability boost. · Cost: 60 Labor, 30 Stone, 800 Gold', tier:2},
@@ -579,6 +580,7 @@ let placed=[], nextId=1;
 let terrain={};
 let paintMode=null;
 let isPainting=false;
+let isErasing=false;
 let linearDrag=null; // {anchorX, anchorY, buildingId}
 let selectedBuilding=null;       // building def selected from sidebar
 let ghostX=-1, ghostY=-1, ghostRotated=false;
@@ -769,6 +771,11 @@ TERRAIN_TEX.forest=makeLinearTexture(48,(c,s)=>{c.fillStyle='#2a5a20';c.fillRect
   for(let i=0;i<12;i++){const cx=Math.random()*s,cy=Math.random()*s,r=4+Math.random()*8;
     c.fillStyle=`rgba(${30+Math.random()*40},${70+Math.random()*50},${20+Math.random()*30},${.4+Math.random()*.3})`;c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.fill();}
   for(let i=0;i<8;i++){c.fillStyle=`rgba(60,40,20,${.2+Math.random()*.2})`;const x=Math.random()*s,y=Math.random()*s;c.fillRect(x,y,1.5,4+Math.random()*5);}});
+TERRAIN_TEX.impassable=makeLinearTexture(48,(c,s)=>{c.fillStyle='#5a5550';c.fillRect(0,0,s,s);
+  for(let i=0;i<18;i++){const cx=Math.random()*s,cy=Math.random()*s,r=3+Math.random()*7;
+    const g=80+Math.random()*60;c.fillStyle=`rgba(${g-10},${g-10},${g-15},${.5+Math.random()*.3})`;c.beginPath();c.arc(cx,cy,r,0,Math.PI*2);c.fill();}
+  for(let i=0;i<10;i++){c.strokeStyle=`rgba(40,35,30,${.3+Math.random()*.3})`;c.lineWidth=.8;c.beginPath();
+    c.moveTo(Math.random()*s,Math.random()*s);c.lineTo(Math.random()*s,Math.random()*s);c.stroke();}});
 // Map building IDs to textures
 function getLinearTexture(buildingId){
   if(buildingId==='dirt_road') return LIN_TEX.dirt_road;
@@ -869,7 +876,10 @@ function getImg(key){
   if(key==='__wa_fishing'){if(!imgCache[key]){const i=new Image();i.src=WA_FISHING_DATA;imgCache[key]=i;}return imgCache[key];}
   if(key==='__wa_workcamp'){if(!imgCache[key]){const i=new Image();i.src=WA_WORKCAMP_DATA;imgCache[key]=i;}return imgCache[key];}
   if(key==='barracks'){if(!imgCache[key]){const i=new Image();i.src=IMG_BARRACKS;imgCache[key]=i;}return imgCache[key];}
+  if(key==='barracks_v2'){if(!imgCache[key]){const i=new Image();i.src=IMG_BARRACKS_V2;imgCache[key]=i;}return imgCache[key];}
+  if(key==='fort'){if(!imgCache[key]){const i=new Image();i.src=IMG_FORT;imgCache[key]=i;}return imgCache[key];}
   if(key==='lookout_tower'){if(!imgCache[key]){const i=new Image();i.src=IMG_LOOKOUT_TOWER;imgCache[key]=i;}return imgCache[key];}
+  if(key==='lookout_wooden'){if(!imgCache[key]){const i=new Image();i.src=IMG_LOOKOUT_WOODEN;imgCache[key]=i;}return imgCache[key];}
   if(key==='wall_palisade'){if(!imgCache[key]){const i=new Image();i.src=IMG_WALL_PALISADE;imgCache[key]=i;}return imgCache[key];}
   if(key==='wall_gate'){if(!imgCache[key]){const i=new Image();i.src=IMG_WALL_GATE;imgCache[key]=i;}return imgCache[key];}
   if(key==='fence'){if(!imgCache[key]){const i=new Image();i.src=IMG_FENCE;imgCache[key]=i;}return imgCache[key];}
@@ -1034,7 +1044,7 @@ document.getElementById('search-input').oninput=e=>buildSidebar(e.target.value);
 // ══════════════════════════════════════════════════════
 function selectBuilding(b){
   if(linearDrag){linearDrag=null;}
-  if(paintMode){paintMode=null;document.getElementById('btn-water').classList.remove('active');document.getElementById('btn-forest').classList.remove('active');}
+  if(paintMode){paintMode=null;document.getElementById('btn-water').classList.remove('active');document.getElementById('btn-forest').classList.remove('active');document.getElementById('btn-impassable').classList.remove('active');}
   // Cancel any active pick-up when choosing from sidebar
   if(pickedUp){ cancelPickUp(); }
   document.querySelectorAll('.bldg-btn.active').forEach(el=>el.classList.remove('active'));
@@ -1142,8 +1152,10 @@ function togglePaint(type){
   if(paintMode===type){paintMode=null;}else{paintMode=type;setMode('place');}
   document.getElementById('btn-water').classList.toggle('active',paintMode==='water');
   document.getElementById('btn-forest').classList.toggle('active',paintMode==='forest');
+  document.getElementById('btn-impassable').classList.toggle('active',paintMode==='impassable');
   if(paintMode){selectedBuilding=null;document.querySelectorAll('.bldg-btn.active').forEach(el=>el.classList.remove('active'));
-    document.getElementById('mode-indicator').textContent='🎨 Painting: '+(paintMode==='water'?'💧 Water':'🌲 Forest')+' — click & drag, right-click erase';}
+    const label=paintMode==='water'?'💧 Water':paintMode==='forest'?'🌲 Forest':'⛰ Impassable';
+    document.getElementById('mode-indicator').textContent='🎨 Painting: '+label+' — click & drag, right-click erase';}
   else{document.getElementById('mode-indicator').textContent='';}drawAll();}
 function paintTile(gx,gy){if(gx<0||gy<0||gx>=GRID_W||gy>=GRID_H)return;terrain[gx+','+gy]=paintMode;}
 function eraseTerrain(gx,gy){if(gx<0||gy<0||gx>=GRID_W||gy>=GRID_H)return;delete terrain[gx+','+gy];}
@@ -1826,6 +1838,10 @@ function canPlaceAt(gx,gy,bw,bh,excludeId=null,buildingId=null,dir=0){
     if(gx<0||gy<0||gx+bw>GRID_W||gy+bh>GRID_H) return false;
   }
   const _isBrdg=def&&def.isBridge;
+  // Impassable tiles: nothing can be placed there (not even bridges)
+  if(isDiag){const _it=getLinearTiles(gx,gy,Math.max(bw,bh),dir);for(const _t of _it){if(terrain[_t.x+','+_t.y]==='impassable')return false;}}
+  else{for(let _dy=0;_dy<bh;_dy++)for(let _dx=0;_dx<bw;_dx++){if(terrain[(gx+_dx)+','+(gy+_dy)]==='impassable')return false;}}
+  // Water tiles: only bridges allowed
   if(!_isBrdg){if(isDiag){const _tiles=getLinearTiles(gx,gy,Math.max(bw,bh),dir);for(const _t of _tiles){if(terrain[_t.x+','+_t.y]==='water')return false;}}
     else{for(let _dy=0;_dy<bh;_dy++)for(let _dx=0;_dx<bw;_dx++){if(terrain[(gx+_dx)+','+(gy+_dy)]==='water')return false;}}}
   const isCrypt = buildingId==='crypt';
@@ -1864,6 +1880,7 @@ wrap.addEventListener('mousemove',e=>{
   const sx=e.clientX-r.left, sy=e.clientY-r.top;
 
   if(isPainting&&paintMode){const{gx,gy}=screenToGrid(sx,sy);if(e.buttons===1){paintTile(gx,gy);drawAll();}else if(e.buttons===2){eraseTerrain(gx,gy);drawAll();}return;}
+  if(isErasing&&mode==='erase'&&e.buttons===1){const{gx,gy}=screenToGrid(sx,sy);eraseAt(gx,gy);return;}
   // Panning
   if(isPanning){panX=panStartOffX+(sx-panStartX);panY=panStartOffY+(sy-panStartY);clampPan();drawAll();return;}
 
@@ -2036,7 +2053,7 @@ wrap.addEventListener('mousedown',e=>{
   // Check hit test
   const hit=hitTest(sx,sy);
 
-  if(mode==='erase'){eraseAt(gx,gy);return;}
+  if(mode==='erase'){isErasing=true;eraseAt(gx,gy);return;}
 
   if(mode==='place'){
     // If we have a pick-up or sidebar selection, try placing
@@ -2162,6 +2179,7 @@ wrap.addEventListener('mousedown',e=>{
 
 wrap.addEventListener('mouseup',e=>{
   if(isPainting){isPainting=false;return;}
+  if(isErasing){isErasing=false;return;}
   if(isPanning){
     isPanning=false;
     wrap.style.cursor = mode==='pan' ? 'grab' : 'default';
@@ -2195,10 +2213,14 @@ wrap.addEventListener('wheel',e=>{
 },{passive:false});
 
 function eraseAt(gx,gy){
+  // First try to erase a building
   for(let i=placed.length-1;i>=0;i--){
     const p=placed[i];
     if(pointInPlaced(gx,gy,p)){placed.splice(i,1);drawAll();return;}
   }
+  // No building here — erase terrain if present
+  const key=gx+','+gy;
+  if(terrain[key]){delete terrain[key];drawAll();return;}
 }
 
 // ══════════════════════════════════════════════════════
