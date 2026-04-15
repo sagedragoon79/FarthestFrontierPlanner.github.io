@@ -138,6 +138,7 @@
         <span class="tool-label">Build</span>
         <button class="tb-btn" id="btn-labels" onclick="toggleLabels()">Labels</button>
         <button class="tb-btn" id="btn-radius" onclick="toggleRadius()">Radius</button>
+        <button class="tb-btn" id="btn-desire" onclick="toggleDesire()">Desirability</button>
         <button class="tb-btn" id="btn-grid" onclick="toggleGrid()">Grid</button>
         <button class="tb-btn active" id="btn-bg" onclick="toggleBg()">Background</button>
       </div>
@@ -385,7 +386,7 @@ const BUILDINGS = [
   // Services
   {id:'town_center',     cat:'service',  name:'Town Center',        w:6,h:6,  icon:'academy',       color:'#8b5e3c', desc:'Core of your settlement. · Cost: 10 Labor, 16 Stone', singleton:true, tier:1},
   {id:'market',          cat:'service',  name:'Market',             w:4,h:4,  icon:'market',        color:'#8b5e3c', desc:'Distributes goods to homes. Generates tax revenue. · Cost: 40 Labor, 50 Planks, 15 Stone', radius:13, upgradeName:'Market Square', upgradeRadius:15, upgradeDesc:'Radius +2 tiles. Also stocks luxury goods and earns 2 gold/building/month.', tier:1},
-  {id:'graveyard',       cat:'service',  name:'Graveyard',          w:3,h:3,  icon:'graveyard',     color:'#8b5e3c', desc:'Required for population growth. Resize 3×3 to 10×10. · Cost: 40 Labor', resizable:true, minW:3,maxW:10,minH:3,maxH:10, tier:1},
+  {id:'graveyard',       cat:'service',  name:'Graveyard',          w:3,h:3,  icon:'graveyard',     color:'#8b5e3c', desc:'Required for population growth. Resize 3×3 to 10×10. · Cost: 40 Labor', resizable:true, minW:3,maxW:10,minH:3,maxH:10, desirability:{bonus:-15,radius:8,dropoff:true,allowMultiple:false,tag:'graveyard'}, tier:1},
   {id:'healers_house',   cat:'service',  name:"Healer's House",     w:3,h:3,  icon:'healers_house', color:'#8b5e3c', desc:'Treats sick or injured villagers. · Cost: 40 Labor, 40 Planks, 20 Stone, 300 Gold', tier:2},
   {id:'trading_post',    cat:'service',  name:'Trading Post',       w:4,h:5,  icon:'trading_post',  color:'#8b5e3c', desc:'Buy and sell goods with traveling merchants. · Cost: 60 Labor, 40 Planks, 10 Stone', singleton:true, tier:2},
   {id:'school',          cat:'service',  name:'School',             w:3,h:4,  icon:'school',        color:'#8b5e3c', desc:'Educates children, improving adult worker efficiency. · Cost: 40 Labor, 40 Planks, 20 Stone', tier:2},
@@ -430,7 +431,7 @@ const BUILDINGS = [
   {id:'well',            cat:'resource', name:'Well',               w:2,h:2,  icon:'basicwell',     color:'#3c5e8b', desc:'Provides clean water. Reduces disease. Wells too close together suffer refill penalties. · Cost: 20 Labor, 5 Stone', radius:14, tier:1},
   {id:'firewood_split',  cat:'resource', name:'Firewood Splitter',  w:2,h:3,  icon:'woodcutter',    color:'#3c5e8b', desc:'Converts logs into firewood. · Cost: 20 Labor, 10 Logs', tier:1},
   {id:'saw_pit',         cat:'resource', name:'Saw Pit',            w:4,h:3,  icon:'saw_pit',       color:'#3c5e8b', desc:'Cuts logs into planks. · Cost: 30 Labor', tier:1},
-  {id:'tannery',         cat:'resource', name:'Tannery',            w:3,h:3,  icon:'tannery',       color:'#3c5e8b', desc:'Processes hides into leather. · Cost: 40 Labor, 25 Planks, 5 Stone', tier:1},
+  {id:'tannery',         cat:'resource', name:'Tannery',            w:3,h:3,  icon:'tannery',       color:'#3c5e8b', desc:'Processes hides into leather. · Cost: 40 Labor, 25 Planks, 5 Stone', desirability:{bonus:-10,radius:6,dropoff:true,allowMultiple:false,tag:'tannery'}, tier:1},
   {id:'cobbler',         cat:'resource', name:'Cobbler Shop',       w:2,h:3,  icon:'cobbler',       color:'#3c5e8b', desc:'Makes shoes from leather.', tier:1},
   {id:'fletcher',        cat:'resource', name:'Fletcher',           w:2,h:3,  icon:'fletcher',      color:'#3c5e8b', desc:'Crafts bows and arrows.', tier:1},
   {id:'basket_shop',     cat:'resource', name:'Basket Shop',        w:3,h:2,  icon:'basket_shop',   color:'#3c5e8b', desc:'Weaves baskets for carrying.', tier:1},
@@ -500,7 +501,7 @@ const BUILDINGS = [
   {id:'wa_workcamp',   cat:'resource', name:'Work Camp Work Area', w:1,h:1, icon:'__wa_workcamp', color:'#6b5e3c', desc:'Place to mark the Work Camp harvest circle centre. Radius 20 tiles.', radius:20, isWorkArea:true, workAreaFor:'work_camp', isSubEntry:true},
 
   // ── Decorations ──
-  {id:'shrine',              cat:'service',    name:'Shrine',                w:3,h:3, icon:'shrine',            desc:'Small place of worship providing Spirituality. · Cost: 30 Labor, 35 Stone, 100 Gold', tier:1},
+  {id:'shrine',              cat:'service',    name:'Shrine',                w:3,h:3, icon:'shrine',            desc:'Small place of worship providing Spirituality. · Cost: 30 Labor, 35 Stone, 100 Gold', desirability:{bonus:8,radius:8,dropoff:true,allowMultiple:false,tag:'shrine'}, tier:1},
   // Tier 1 Decorations
   {id:'birch_tree',          cat:'decoration', name:'Birch Tree',             w:1,h:1, icon:'birch_tree',    desc:'Decorative tree. · Cost: 12 Gold', tier:1},
   {id:'maple_tree',          cat:'decoration', name:'Maple Tree',             w:1,h:1, icon:'maple_tree',    desc:'Decorative tree. · Cost: 12 Gold', tier:1},
@@ -511,8 +512,8 @@ const BUILDINGS = [
   {id:'small_juniper_bush',  cat:'decoration', name:'Small Juniper Bush',     w:1,h:1, icon:'juniper_bush',    desc:'Smaller decorative juniper bush. · Cost: 5 Labor, 2 Stone, 5 Gold', tier:1},
   {id:'low_brush',           cat:'decoration', name:'Low Brush',              w:1,h:1, icon:'small_shrub',     desc:'Low ground-cover brush. · Cost: 5 Labor, 2 Stone, 5 Gold', tier:1},
   {id:'tall_brush',          cat:'decoration', name:'Tall Brush',             w:1,h:1, icon:'small_shrub',     desc:'Taller decorative brush. · Cost: 5 Labor, 2 Stone, 5 Gold', tier:1},
-  {id:'small_garden',        cat:'decoration', name:'Small Garden',           w:1,h:1, icon:'small_garden',    desc:'Small garden plot. Modest desirability boost. · Cost: 5 Labor, 5 Gold', tier:1},
-  {id:'medium_garden',       cat:'decoration', name:'Medium Garden',          w:2,h:2, icon:'medium_garden',    desc:'Medium garden. Good desirability boost. · Cost: 10 Labor, 10 Gold', tier:1},
+  {id:'small_garden',        cat:'decoration', name:'Small Garden',           w:1,h:1, icon:'small_garden',    desc:'Small garden plot. Modest desirability boost. · Cost: 5 Labor, 5 Gold', desirability:{bonus:3,radius:3,dropoff:true,allowMultiple:false,tag:'small_garden'}, tier:1},
+  {id:'medium_garden',       cat:'decoration', name:'Medium Garden',          w:2,h:2, icon:'medium_garden',    desc:'Medium garden. Good desirability boost. · Cost: 10 Labor, 10 Gold', desirability:{bonus:5,radius:4,dropoff:true,allowMultiple:false,tag:'medium_garden'}, tier:2},
   {id:'garden_trail',        cat:'decoration', name:'Garden Trail',           w:3,h:1, icon:'garden_trail',    desc:'Decorative garden path. · Cost: 20 Labor, 10 Gold', tier:1},
   {id:'small_plaza',         cat:'decoration', name:'Small Plaza',            w:1,h:1, icon:'small_plaza',    desc:'Small paved plaza. · Cost: 5 Labor, 4 Stone, 4 Gold', tier:1},
   {id:'ext_small_shrub',     cat:'decoration', name:'Extravagant Small Shrub', w:1,h:1, icon:'ext_small_shrub', desc:'Higher tier version with increased desirability. · Cost: 5 Labor, 4 Stone, 10 Gold', tier:1},
@@ -528,8 +529,8 @@ const BUILDINGS = [
   {id:'wildflowers',         cat:'decoration', name:'Wildflowers',           w:1,h:1, icon:'small_shrub',    desc:'Wild flower decoration. · Cost: 5 Labor, 5 Gold', tier:2},
   {id:'medium_plaza',        cat:'decoration', name:'Medium Plaza',          w:2,h:2, icon:'medium_plaza',    desc:'Paved plaza. Moderate desirability boost. · Cost: 15 Labor, 10 Stone, 30 Gold', tier:2},
   {id:'small_grass_clearing',cat:'decoration', name:'Small Grass Clearing',  w:1,h:1, icon:'dirt_clearing',    desc:'Cleared ground with rustic element. · Cost: 5 Labor, 2 Gold', tier:2},
-  {id:'small_park',          cat:'decoration', name:'Small Park',            w:3,h:3, icon:'small_park',    desc:'Small green space. Boosts desirability. · Cost: 30 Labor, 15 Stone, 150 Gold', tier:2},
-  {id:'large_park',          cat:'decoration', name:'Large Park',            w:5,h:5, icon:'large_park',    desc:'Large green space. Significant desirability boost. · Cost: 60 Labor, 30 Stone, 800 Gold', tier:2},
+  {id:'small_park',          cat:'decoration', name:'Small Park',            w:3,h:3, icon:'small_park',    desc:'Small green space. Boosts desirability. · Cost: 30 Labor, 15 Stone, 150 Gold', desirability:{bonus:10,radius:6,dropoff:true,allowMultiple:false,tag:'small_park'}, tier:2},
+  {id:'large_park',          cat:'decoration', name:'Large Park',            w:5,h:5, icon:'large_park',    desc:'Large green space. Significant desirability boost. · Cost: 60 Labor, 30 Stone, 800 Gold', desirability:{bonus:15,radius:9,dropoff:true,allowMultiple:false,tag:'large_park'}, tier:2},
   {id:'ext_small_bench_plaza',cat:'decoration', name:'Extravagant Small Bench Plaza', w:1,h:1, icon:'ext_bench_plaza', desc:'Higher tier version with increased desirability. · Cost: 5 Labor, 4 Planks, 15 Stone, 1 Gold', tier:2},
   {id:'ext_corner_bench_plaza',cat:'decoration', name:'Extravagant Corner Bench Plaza', w:1,h:1, icon:'ext_corner_bench_plaza', desc:'Higher tier version with increased desirability. · Cost: 5 Labor, 4 Planks, 15 Stone, 1 Gold', tier:2},
   {id:'ext_medium_plaza',    cat:'decoration', name:'Extravagant Medium Plaza', w:3,h:3, icon:'ext_medium_plaza', desc:'Higher tier version with increased desirability. · Cost: 15 Labor, 10 Stone, 10 Gold', tier:2},
@@ -594,7 +595,7 @@ let pickedUp=null;   // {placedObj} — building picked up from grid (removed fr
 let dragResize=null; // {placedObj, edge:'e'|'s'|'se', startGx,startGy, origX,origY,origW,origH}
 
 let mode='place';
-let showLabels=true, showRadius=false, showGrid=true;
+let showLabels=true, showRadius=false, showGrid=true, showDesire=false;
 let zoom=1.0, panX=0, panY=0; // will be centered on init
 let showBg=true;
 let isPanning=false, panStartX, panStartY, panStartOffX, panStartOffY;
@@ -1148,6 +1149,7 @@ function toggleRadius(){
   drawAll();
 }
 function toggleBg(){showBg=!showBg;document.getElementById('btn-bg').classList.toggle('active',showBg);drawAll();}
+function toggleDesire(){showDesire=!showDesire;document.getElementById('btn-desire').classList.toggle('active',showDesire);drawAll();}
 function togglePaint(type){
   if(paintMode===type){paintMode=null;}else{paintMode=type;setMode('place');}
   document.getElementById('btn-water').classList.toggle('active',paintMode==='water');
@@ -1570,6 +1572,33 @@ function drawPlaced(p, isResizing=false){
     if(isWell){ctx.strokeStyle='rgba(100,180,255,.2)';ctx.lineWidth=5;ctx.stroke();ctx.strokeStyle='rgba(120,200,255,.7)';ctx.lineWidth=1.5;ctx.stroke();}
     else{ctx.strokeStyle=isUpgrade?'rgba(220,185,60,.25)':'rgba(201,162,39,.2)'; ctx.lineWidth=5; ctx.stroke();
     ctx.strokeStyle=isUpgrade?'rgba(255,220,80,.9)':'rgba(240,195,50,.85)'; ctx.lineWidth=1.5; ctx.stroke();}
+  }
+
+  // ── Desirability radius (separate toggle) ──
+  if(showDesire && def.desirability && !isResizing){
+    const cx=sx+pw/2, cy=sy+ph/2, r=def.desirability.radius*cs;
+    const positive=def.desirability.bonus>=0;
+    ctx.beginPath(); ctx.arc(cx,cy,r,0,Math.PI*2);
+    if(positive){
+      // Purple/violet for positive desirability
+      ctx.fillStyle='rgba(170,90,200,.08)'; ctx.fill();
+      ctx.strokeStyle='rgba(170,90,200,.25)'; ctx.lineWidth=5; ctx.stroke();
+      ctx.strokeStyle='rgba(200,130,230,.85)'; ctx.lineWidth=1.5; ctx.stroke();
+    } else {
+      // Red for negative desirability (graveyards, etc.)
+      ctx.fillStyle='rgba(200,60,60,.08)'; ctx.fill();
+      ctx.strokeStyle='rgba(200,60,60,.25)'; ctx.lineWidth=5; ctx.stroke();
+      ctx.strokeStyle='rgba(230,90,90,.85)'; ctx.lineWidth=1.5; ctx.stroke();
+    }
+    // Show the bonus value at the center
+    if(cs>=10){
+      const fs=Math.min(cs*.5,12);
+      ctx.font=`bold ${fs}px 'Crimson Pro',serif`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      const txt=(positive?'+':'')+def.desirability.bonus;
+      ctx.strokeStyle='rgba(0,0,0,.9)';ctx.lineWidth=3;ctx.lineJoin='round';ctx.strokeText(txt,cx,cy-r+fs);
+      ctx.fillStyle=positive?'#d090ff':'#ff8888';ctx.fillText(txt,cx,cy-r+fs);
+    }
   }
 
   if(isRoad||def.isLinear||def.isBridge){
