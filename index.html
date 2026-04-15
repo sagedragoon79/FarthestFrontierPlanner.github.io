@@ -1795,9 +1795,17 @@ function drawPlaced(p, isResizing=false){
       ctx.textAlign='center';ctx.textBaseline='middle';
       const pct = (total>=0?'+':'') + total.toFixed(1) + '%';
       const tx = sx+pw/2, ty = sy+ph/2;
+      // Tier-based color: matches in-game shelter upgrade tiers
+      let col;
+      if(total < 0)        col = '#ff8888';   // negative — red
+      else if(total < 25)  col = '#f0d050';   // T1 — yellow
+      else if(total < 40)  col = '#9cf09c';   // T2 — green
+      else if(total < 61)  col = '#7cd8ff';   // T3 — cyan
+      else if(total < 90)  col = '#6090ff';   // T4 — blue
+      else                  col = '#d090ff';   // T5 — purple
       ctx.strokeStyle='rgba(0,0,0,.95)'; ctx.lineWidth=4; ctx.lineJoin='round';
       ctx.strokeText(pct, tx, ty);
-      ctx.fillStyle = total>=0 ? '#9cf09c' : '#ff8888';
+      ctx.fillStyle = col;
       ctx.fillText(pct, tx, ty);
     }
   }
