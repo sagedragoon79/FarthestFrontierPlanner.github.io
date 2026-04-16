@@ -1,5 +1,5 @@
 // Bump this whenever you want force-refresh clients to re-download the app.
-const CACHE = 'ffplanner-v1';
+const CACHE = 'ffplanner-v2';
 
 // Resources to pre-cache so the app works offline. index.html already contains
 // every asset inlined as base64, so there's very little else to cache.
