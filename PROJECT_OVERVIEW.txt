@@ -1,0 +1,197 @@
+================================================================================
+  FARTHEST FRONTIER PLANNER — Project Overview
+================================================================================
+
+  Author:    sagedragoon79
+  URL:       https://sagedragoon79.github.io/FarthestFrontierPlanner/
+  Source:    https://github.com/sagedragoon79/FarthestFrontierPlanner
+  Mod repo:  https://github.com/sagedragoon79/BuildingCostsDump
+
+================================================================================
+  WHAT IT IS
+================================================================================
+
+A browser-based city planner for the game Farthest Frontier by Crate
+Entertainment. It's a single self-contained HTML file (~22 MB) with every
+asset embedded as base64 — no server needed, no external dependencies.
+Hosted free on GitHub Pages and installable as a Progressive Web App (PWA)
+for offline desktop use.
+
+Players use it to lay out their settlement on a grid before building
+in-game: positioning shelters, services, decorations, roads, walls, and
+work areas with live feedback on desirability, amenity coverage, and
+service radii.
+
+================================================================================
+  CORE FEATURES
+================================================================================
+
+  BUILDING PLACEMENT
+  - 153 buildings across 8 categories (services, housing, food, resource,
+    defense, walls/roads, decorations, work areas)
+  - Click-to-place with ghost preview showing footprint and radius
+  - Pick up, move, rotate (Tab), delete (Del) placed buildings
+  - Resizable buildings (crop fields, graveyards) with drag handles
+  - Linear structures (roads, walls, fences, bridges) with click-drag-click
+    placement supporting horizontal, vertical, and diagonal staircase patterns
+
+  DESIRABILITY SYSTEM (from game data)
+  - 65+ buildings have real desirability bonus, radius, dropoff, and tag
+    values extracted from the game's prefab data via a companion MelonLoader
+    mod (BuildingCostsDump)
+  - Live shelter desirability % displayed on each placed shelter using the
+    game's actual formula:
+      contribution = dropoff ? (bonus/2) + (bonus/2)*(1 - dist/radius) : bonus
+  - Tag-based deduplication: only the strongest of each tag counts unless
+    allowMultiple is true (matching in-game behavior)
+  - Shelter % color-coded to upgrade tier thresholds:
+      Yellow  0-29%  (Tier 1 Shelter)
+      Green  30-64%  (Tier 2 Homestead)
+      Blue   65-84%  (Tier 3 Large House)
+      Purple   85%+  (Tier 4 Manor)
+
+  AMENITY OVERLAYS (cycling button: Off / Desirability / Spirituality / Entertainment)
+  - Desirability mode: all bonus/penalty rings, live shelter %
+  - Spirituality mode: Shrine/Temple gold rings, shelter shows check/X
+  - Entertainment mode: Pub/Theater/Library/Festival Pole teal rings, check/X
+
+  TIER 2 UPGRADES
+  - 8 service buildings support in-place T2 toggle (press U on hover):
+    Bakery, Healer's House, Market, Shrine, Temple, Well, Festival Pole,
+    Flag Pole — each with distinct T1/T2 bonus and radius values
+  - Gold "T2" badge on upgraded buildings, live % recalculates
+
+  COVERAGE WARNINGS (always visible)
+  - Red border + warning: shelter outside market radius
+  - Dark orange border + warning: fruit tree outside arborist work area
+  - Rat icon: rat-sensitive building outside rat catcher work area
+  - Green warning: well overlapping another well (refill penalty)
+  - Work areas are detachable (arborist, rat catcher) — placing the
+    building alone does NOT auto-provide coverage
+
+  TERRAIN PAINTING
+  - Water, Forest, Impassable terrain types
+  - Cycleable brush size: 1x1, 3x3, 5x5
+  - Left-click paint, right-click erase
+  - Bridges require water, nothing can be placed on impassable
+
+  KEYBOARD SHORTCUTS
+  - N dirt road, M cobbled road, B/V bridges, H shelter, W well,
+    G granary, S storehouse, F fence, P palisade, L lookout tower
+  - U = toggle T2 upgrade on hovered building
+  - Tab = rotate, Del = delete, Esc = deselect, +/- = zoom
+  - Hotkey badges shown on sidebar buttons and in tooltips
+
+  UI FEATURES
+  - Parchment background toggle
+  - Grid toggle
+  - Label toggle (building names on placed buildings)
+  - Radius overlay (service coverage circles)
+  - Search box to filter buildings
+  - Comprehensive Help modal (toolbar button)
+
+  ICONS
+  - 214 building icons extracted from game via MelonLoader mod
+  - 78 native 256x256 from game assets
+  - 136 AI-upscaled from 64x64 to 256x256 via Real-ESRGAN (x4plus model)
+  - Real rat icon (ICN_Rat01_64) from game sprites
+  - Villager portrait icon for capacity indicator
+
+  SAVE / LOAD
+  - JSON export/import via copy-paste
+  - Auto-saves to browser localStorage
+
+  PWA
+  - Installable as desktop app from Chrome/Edge address bar
+  - Offline-capable via service worker (stale-while-revalidate)
+  - Auto-updates when new versions are pushed
+
+  ANALYTICS
+  - GoatCounter (privacy-friendly, no cookies)
+  - Live visitor count in status bar
+  - Dashboard at sagedragoon.goatcounter.com
+
+================================================================================
+  COMPANION MOD: BuildingCostsDump (MelonLoader)
+================================================================================
+
+  Repo:     https://github.com/sagedragoon79/BuildingCostsDump
+  Version:  1.7.0
+  Target:   Farthest Frontier (Mono variant) via MelonLoader
+
+  The mod runs on game startup and dumps building data to the UserData/
+  folder. No user interaction required — it fires automatically and writes:
+
+  OUTPUT FILES
+  - BuildingCostsDump.csv   — spreadsheet-ready, all fields comma-separated
+  - BuildingCostsDump.txt   — human-readable formatted table
+  - BuildingIcons/          — 214 PNG files, one per building (icon256 sprite)
+  - ExtraIcons/             — bonus sprites matching keyword patterns
+
+  FIELDS PER BUILDING
+  - Identifier, Category, GridW, GridH
+  - Labor (workRequiredToConstruct), RelocateGold, Deconstruct
+  - DesirabilityBonus, DesirabilityRadius, DropoffEnabled, AllowMultiple, Tag
+  - Radii (every *Radius* float field on the Building subclass via reflection):
+    workRadius, harvestRadius, huntingRadius, foragingRadius, fishingRadius,
+    miningRadius, tradingRadius, spiritualityRadius, entertainmentRadius,
+    radiusForAquiferSharing, etc.
+  - Prerequisites (prerequisiteIdentifiers)
+  - Materials (buildingMaterials list)
+
+  HOW IT READS DESIRABILITY
+  - Scans prefabEntries[*].PREFAB() (not placeablePrefab, which is just
+    the ghost preview)
+  - Reads private _strategicPlanning* serialized fields via reflection
+    (the public getters call techTreeManager which doesn't exist on raw
+    prefabs and throws)
+
+  HOW IT READS RADII
+  - Walks the Building subclass hierarchy and reflects on every float field
+    whose name contains "Radius" (case-insensitive), skipping
+    strategicPlanning fields already captured
+
+  HOW IT DUMPS ICONS
+  - Uses sprite.textureRect for atlased sprites (not sprite.rect, which
+    gives wrong coordinates for packed atlases)
+  - Blits through a RenderTexture to bypass the Read/Write Enabled flag
+    on source textures
+  - No Y-flip needed (Unity's coordinate system is consistent between
+    textureRect and ReadPixels)
+
+  KEY DISCOVERY: TILE SIZE
+  - BuildManager._cellSize = 5f — one grid tile = 5 world units
+  - All radii from the game are in world units and must be divided by 5
+    to convert to tile-space for the planner
+
+================================================================================
+  DATA FILES (in data/ folder)
+================================================================================
+
+  BuildingCostsDump.csv
+    Vanilla dump from v1.7 mod with all desirability, radii, and material
+    data. 223 building entries including tier variants and monument variants.
+
+  BuildingCostsDump.txt
+    Same data in human-readable formatted table.
+
+  These are the authoritative source for all planner values. When the game
+  patches, re-run the mod (with all other mods disabled) and the CSV can
+  be used to batch-update the planner's BUILDINGS array.
+
+================================================================================
+  TECH STACK
+================================================================================
+
+  - Single HTML file with inline CSS + JS + base64 assets
+  - HTML5 Canvas for grid rendering (2D context, imageSmoothingEnabled=false)
+  - ES6 JavaScript with global state (placed[], terrain{}, ghostX/Y, etc.)
+  - Procedural canvas textures for roads/walls via makeLinearTexture()
+  - Google Fonts (Cinzel, Crimson Pro) loaded via @import
+  - Service worker for PWA offline support
+  - GoatCounter <script> tag for analytics
+  - GitHub Pages for hosting (free, HTTPS by default)
+  - MelonLoader (Mono) for game modding (.NET Framework 4.7.2)
+  - Real-ESRGAN (ncnn-vulkan) for AI icon upscaling
+
+================================================================================
